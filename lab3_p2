@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+import rospy
+from time import sleep
+from std_msgs.msg import Float64
+from sensor_msgs.msg import JointState
+import numpy as np
+
+def commands():
+    rospy.init_node('NurJoint2')
+    out = 0.0
+    rad = 0.0
+    sin = 0.0
+    i = 0
+    m = 0
+    while not False:
+		if i==0:
+			i=int(input("Enter 1 for step, 2 for sine: "))
+		if m==0:
+			m=int(input("Enter 1 to select the 1st motor, 2 for the last: "))
+		while not False:
+			if i == 1:
+				if out == 0:
+					out = 1
+					sleep(2)
+				else:
+					out = 0
+					sleep(2)
+			elif i==2:
+				rad=rad+0.1
+				out=np.sin(rad)
+				sleep(0.1)
+			if m == 1:
+				pub1 = out
+				pub5 = 0
+			elif m == 2:
+				pub5 = out
+				pub1 = 0
+
+			pubmot1 = rospy.Publisher('/robot/joint1_position_controller/command', Float64, queue_size=5)
+			pubmot5 = rospy.Publisher('/robot/joint5_position_controller/command', Float64, queue_size=5)
+			
+			while not False:
+				pubmot1.publish(Float64(pub1))
+				pubmot5.publish(Float64(pub5))
+				angles = rospy.wait_for_message('/robot/joint_states', JointState, timeout = 5)
+				
+				if (abs(angles.position[4] - pub1) < 0.01 and abs(angles.position[0] - pub5) < 0.01):
+					break
+
+if __name__ == '__main__':
+    try:
+        commands()
+    except rospy.ROSInterruptException:
+        pass
